@@ -39,6 +39,30 @@ C(x, y) = A(x, y), если M(x, y) = 0
 
 Обе реализации получают одинаковые изображения и границы цвета. Второе изображение заранее приводится к ширине и высоте первого через `cv2.resize`. При разных пропорциях оно растягивается. Готовые результаты и маски проверяются на полное совпадение через `np.array_equal`.
 
+Реализация
+```
+def chroma_key_opencv(foreground, background, lower, upper):
+    mask = cv2.inRange(foreground, np.array(lower, dtype=np.uint8),
+                       np.array(upper, dtype=np.uint8))
+    result = foreground.copy()
+    cv2.copyTo(background, mask, result)
+    return result, mask
+
+
+def chroma_key_python(foreground, background, lower, upper):
+    height, width = foreground.shape[:2]
+    result = foreground.copy()
+    mask = np.zeros((height, width), dtype=np.uint8)
+    for y in range(height):
+        for x in range(width):
+            red, green, blue = foreground[y, x]
+            if (lower[0] <= red <= upper[0]
+                    and lower[1] <= green <= upper[1]
+                    and lower[2] <= blue <= upper[2]):
+                result[y, x] = background[y, x]
+                mask[y, x] = 255
+    return result, mask
+```
 ### запуск
 
 ```powershell
@@ -67,6 +91,10 @@ python main.py a.png b.png --lower 240 240 240 --upper 255 255 255 --repeats 5
 Слева направо: исходное изображение, изображение для подстановки, результат.
 
 ![Исходное изображение, второе изображение и результат](results/comparison.png)
+python main.py a.png b.png --lower 200 200 200 --upper 255 255 255 --repeats 1
+![Исходное изображение, второе изображение и результат](results/comparison2.png)
+python main.py a.png b.png --lower 0 0 0 --upper 255 50 50 --repeats 1
+
 
 ![Маска выбранного диапазона](results/mask.png)
 
